@@ -8,7 +8,7 @@ use App\Http\Requests\StoreUserRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
-
+use Illuminate\Support\Facades\Hash;
 class UsersController extends Controller
 {
     /**
@@ -39,8 +39,13 @@ class UsersController extends Controller
         }
 
         $validated = $request->validated();
-
-        $enquiry = User::create($validated);
+        
+        $enquiry = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'password' => Hash::make($request->password)
+        ]);
         return (new UserResource($enquiry))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);

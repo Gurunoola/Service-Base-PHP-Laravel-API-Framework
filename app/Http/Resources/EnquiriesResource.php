@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class EnquiriesResource extends JsonResource
 {
@@ -15,14 +16,25 @@ class EnquiriesResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => (string) $this->id,
-            'type' => 'Enquiries',
+            'id' => $this->id,
             'name' => $this->name,
-            'address' => $this->address,
-            'city' => $this->city,
-            'zip_code' => $this->zip_code,
+            'gender' => $this->gender,
+            'dob' => $this->dob,
             'phone_number' => $this->phone_number,
-            'logo_path' => $this->logo_path,
+            'alternate_phone_number' => $this->alternate_phone_number,
+            'email' => $this->email,
+            'address' => $this->address,
+            'qualification' => $this->qualification,
+            'course' => $this->course,
+            'optional_subject' => $this->optional_subject,
+            'attempts_given' => $this->attempts_given,
+            'referral_source' => $this->referral_source,
+            'counseling_satisfaction' => $this->counseling_satisfaction,
+            'contact_preference' => $this->contact_preference,
+            'status' => $this->status,
+            'rescheduled_date' => $this->rescheduled_date,
+            'remarks' => $this->remarks,
+            'dp_path' => $this->dp_path ? Storage::url($this->dp_path) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             

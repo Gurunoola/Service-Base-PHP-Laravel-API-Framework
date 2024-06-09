@@ -8,6 +8,8 @@ use App\Http\Requests\StoreEnquiriesRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
 
 class EnquiriesController extends Controller
 {
@@ -37,11 +39,18 @@ class EnquiriesController extends Controller
     {
         $validated = $request->validated();
 
+        if ($request->has('dp_path')) {
+            $imagePath = $this->saveBase64Image($request->input('dp_path'));
+            $validated['dp_path'] = $imagePath;
+        }
+
         $enquiry = Enquiries::create($validated);
         return (new EnquiriesResource($enquiry))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
+
+
 
     /**
      * Display the specified resource.
@@ -71,11 +80,35 @@ class EnquiriesController extends Controller
         }
 
         $enquiry = Enquiries::findOrFail($id);
-        $enquiry->update($request->validated());
 
+        $validated = $request->validated();
+
+        if ($request->has('dp_path')) {
+            // Delete the old image if it exists
+            if ($enquiry->dp_path) {
+                Storage::disk('public')->delete($enquiry->dp_path);
+            }
+            // Save the new image
+            $imagePath = $this->saveBase64Image($request->input('dp_path'));
+            $validated['dp_path'] = $imagePath;
+        } else {
+            // Remove dp_path from validated data to prevent overwriting with null
+            unset($validated['dp_path']);
+        }
+
+        $enquiry->update($validated);
         return (new EnquiriesResource($enquiry))
             ->response()
             ->setStatusCode(Response::HTTP_OK);
+    }
+
+
+    protected function saveBase64Image($base64Image)
+    {
+        $image = Image::make($base64Image)->encode('jpg', 75); // Adjust format and quality as needed
+        $path = 'dps/' . uniqid() . '.jpg';
+        Storage::disk('public')->put($path, $image);
+        return $path;
     }
 
     /**
@@ -91,9 +124,12 @@ class EnquiriesController extends Controller
         }
 
         $enquiry = Enquiries::findOrFail($id);
+        if ($enquiry->dp_path) {
+            Storage::disk('public')->delete($enquiry->dp_path);
+        }
         $enquiry->delete();
 
-        return response()->json(['message' => 'Enquiries deleted successfully'], Response::HTTP_OK);
+        return response()->json(['message' => 'Enquiries deleted successfully'], 204);
     }
 
     /**
@@ -144,8 +180,12 @@ class EnquiriesController extends Controller
         if (Gate::denies('isAdmin')) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
+        
 
         $enquiry = Enquiries::onlyTrashed()->findOrFail($id);
+        if ($enquiry->dp_path) {
+            Storage::disk('public')->delete($enquiry->dp_path);
+        }
         $enquiry->forceDelete();
 
         return response()->json(['message' => 'Enquiries permanently deleted'], Response::HTTP_OK);
