@@ -37,6 +37,7 @@ class EnquiriesResource extends JsonResource
             'dp_path' => $this->dp_path ? Storage::url($this->dp_path) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'counsellor_name' => $this->counsellor ? $this->counsellor->name : null, // Include counsellor's name
             
         ];
     }

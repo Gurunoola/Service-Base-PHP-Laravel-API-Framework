@@ -19,7 +19,7 @@ class EnquiriesTableSeeder extends Seeder
         $faker = Faker::create();
         $users = User::pluck('id')->all(); // Get all user IDs to randomly assign as counsellors
 
-        foreach (range(1, 5) as $index) {
+        foreach (range(1, 30) as $index) {
             Enquiries::create([
                 'name' => $faker->name,
                 'gender' => $faker->randomElement(['male', 'female', 'other']),
