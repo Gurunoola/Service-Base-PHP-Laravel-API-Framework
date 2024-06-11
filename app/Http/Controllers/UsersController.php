@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Config;
 class UsersController extends Controller
 {
     /**
@@ -21,9 +22,24 @@ class UsersController extends Controller
         $perPage = $request->get('per_page', 15);
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
-        $users = User::orderBy($sortBy, $sortOrder)->paginate($perPage);
+
+        $filterableFields = [
+            'name' => 'like',
+            'email' => 'like',
+            'role' => '='
+        ];
+
+        $query = User::query();
+
+        foreach ($request->all() as $key => $value) {
+            if (array_key_exists($key, $filterableFields)) {
+                $operator = $filterableFields[$key];
+                $query->where($key, $operator, $operator === 'like' ? '%' . $value . '%' : $value);
+            }
+        }
+
+        $users = $query->orderBy($sortBy, $sortOrder)->paginate($perPage);
         return UserResource::collection($users);
-        
     }
 
     /**
@@ -37,6 +53,16 @@ class UsersController extends Controller
         if (Gate::denies('isAdmin')) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
+
+         // Get the maximum number of users allowed from the configuration
+         $maxUsers = Config::get('custom.max_users');
+
+         // Check the current number of users
+         $currentUsersCount = User::count();
+ 
+         if ($currentUsersCount >= $maxUsers) {
+             return response()->json(['message' => 'Maximum number of users reached'], Response::HTTP_FORBIDDEN);
+         }
 
         $validated = $request->validated();
         
@@ -101,7 +127,7 @@ class UsersController extends Controller
         $enquiry = User::findOrFail($id);
         $enquiry->delete();
 
-        return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
+        return response()->json(['message' => 'User deleted successfully'], Response::HTTP_NO_CONTENT);
     }
 
     /**
